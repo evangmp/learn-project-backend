@@ -15,8 +15,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.learn.demo.security.services.UserDetailsServiceImpl;
 
-import com.learn.demo.security.jwt.JwtUtils;
-
 import java.io.IOException;
 
 public class AuthTokenFilter extends OncePerRequestFilter {

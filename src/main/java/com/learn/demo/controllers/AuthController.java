@@ -1,6 +1,11 @@
 package com.learn.demo.controllers;
 
+import com.learn.demo.models.UserData;
+import com.learn.demo.security.jwt.AuthEntryPointJwt;
+import com.learn.demo.security.services.UserDataService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,9 +26,7 @@ import com.learn.demo.repository.UserRepository;
 import com.learn.demo.security.jwt.JwtUtils;
 import com.learn.demo.security.services.UserDetailsImpl;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -44,6 +47,10 @@ public class AuthController {
 
     @Autowired
     JwtUtils jwtUtils;
+
+    public AuthController(UserDataService userDataService) {
+        this.userDataService = userDataService;
+    }
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -109,5 +116,33 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    private final UserDataService userDataService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthEntryPointJwt.class);
+
+
+    @PostMapping("/create")
+    public ResponseEntity<?> createUserData(@RequestBody UserData userData){
+        System.out.println("id: "+ userData.getId() + ", name : " + userData.getTaskName());
+        System.out.println("discipline: "+ userData.getTaskDiscipline() + ", date : " + userData.getTaskDate());
+        System.out.println("acheivneement: "+ userData.getTaskAchievement());
+        return ResponseEntity.ok().body(userDataService.saveUserData(userData));
+    }
+
+    @GetMapping(value="/tasks")
+    public ResponseEntity<List<UserData>> getAllUserData(){
+        return ResponseEntity.ok().body(userDataService.getAllUserData());
+    }
+
+    @GetMapping(value="/tasks/{id}")
+    public ResponseEntity<UserData> getUserDataById(@PathVariable("id") Long id){
+        return ResponseEntity.ok().body(userDataService.getUserDataById(id));
+    }
+
+    @PostMapping("/delete/{idTask}")
+    public ResponseEntity<?> deleteUserData(@RequestBody UserData userData, @PathVariable("idTask") Long idTask){
+        return ResponseEntity.ok().body(userDataService.deleteUserData(idTask, userData));
     }
 }

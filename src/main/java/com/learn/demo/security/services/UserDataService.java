@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -15,10 +17,12 @@ import java.util.Optional;
 public class UserDataService {
     private final UserDataRepository userDataRepository;
 
+    // to get all the users
     public List<UserData> getAllUserData() {
         return userDataRepository.findAll();
     }
 
+    // to get a user with his id
     public UserData getUserDataById(Long id) {
         Optional<UserData> userData = userDataRepository.findById(id);
         if(userData.isPresent()) {
@@ -28,11 +32,58 @@ public class UserDataService {
         return null;
     }
 
+    // to add a user
     public UserData saveUserData(UserData userData) {
         UserData savedUserData = userDataRepository.save(userData);
         log.info("");
         log.info("Task with id " + savedUserData.getId() + " saved, " + savedUserData.getTaskName() + " et " + savedUserData.getTaskDiscipline() + " ");
         log.info("");
+        return savedUserData;
+    }
+
+
+    // to delete a task for a user
+    public Map<Integer, String> deleteRow(Map<Integer, String> taskThing, Long taskId) {
+        int i = 0;
+        Map<Integer, String> newTasksName = new HashMap<>();
+        while (i < taskThing.size()) {
+            if(i < taskId) {
+                newTasksName.put(i, taskThing.get(i));
+            }
+            if(i > taskId) {
+                newTasksName.put(i-1, taskThing.get(i));
+            }
+            i++;
+        }
+        return newTasksName;
+    }
+
+    public Map<Integer, int[]> deleteRowSpecial(Map<Integer, int[]> taskThing, Long taskId) {
+        int i = 0;
+        Map<Integer, int[]> newTasksName = new HashMap<>();
+        while (i < taskThing.size()) {
+            if(i < taskId) {
+                newTasksName.put(i, taskThing.get(i));
+            }
+            if(i > taskId) {
+                newTasksName.put(i-1, taskThing.get(i));
+            }
+            i++;
+        }
+        return newTasksName;
+    }
+
+    public UserData deleteUserData(Long taskId, UserData userData) {
+        UserData savedUserData = new UserData(
+                userData.getId(),
+                deleteRow(userData.getTaskName(), taskId),
+                deleteRow(userData.getTaskDiscipline(), taskId),
+                deleteRow(userData.getTaskDate(), taskId),
+                deleteRowSpecial(userData.getTaskAchievement(), taskId)
+        );
+        saveUserData(savedUserData);
+        log.info("");
+        log.info("TaskName after : " + savedUserData.getTaskName());
         return savedUserData;
     }
 }

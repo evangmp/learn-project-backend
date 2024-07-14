@@ -145,4 +145,10 @@ public class AuthController {
     public ResponseEntity<?> deleteUserData(@RequestBody UserData userData, @PathVariable("idTask") Long idTask){
         return ResponseEntity.ok().body(userDataService.deleteUserData(idTask, userData));
     }
+
+    @PostMapping("/update")
+    public ResponseEntity<?> updateUserData(@RequestBody UserData userData){
+        userDataService.deleteUser(userData.getId());
+        return ResponseEntity.ok().body(userDataService.saveUserData(userData));
+    }
 }

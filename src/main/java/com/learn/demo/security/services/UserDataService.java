@@ -86,4 +86,9 @@ public class UserDataService {
         log.info("TaskName after : " + savedUserData.getTaskName());
         return savedUserData;
     }
+
+    // delete a complete user
+    public void deleteUser(Long id) {
+        userDataRepository.deleteById(id);
+    }
 }

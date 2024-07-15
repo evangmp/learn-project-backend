@@ -114,8 +114,9 @@ public class AuthController {
 
         user.setRoles(roles);
         userRepository.save(user);
-
-        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+        //
+        // new MessageResponse("User registered successfully!")
+        return ResponseEntity.ok(user.getId());
     }
 
     private final UserDataService userDataService;
@@ -150,5 +151,10 @@ public class AuthController {
     public ResponseEntity<?> updateUserData(@RequestBody UserData userData){
         userDataService.deleteUser(userData.getId());
         return ResponseEntity.ok().body(userDataService.saveUserData(userData));
+    }
+
+    @GetMapping(value="/id/{username}")
+    public Long getIdByUsername(@PathVariable("username") String username){
+        return userDataService.userIdByUsername(username);
     }
 }

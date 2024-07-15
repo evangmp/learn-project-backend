@@ -1,7 +1,9 @@
 package com.learn.demo.security.services;
 
+import com.learn.demo.models.User;
 import com.learn.demo.models.UserData;
 import com.learn.demo.repository.UserDataRepository;
+import com.learn.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.Optional;
 @Slf4j
 public class UserDataService {
     private final UserDataRepository userDataRepository;
+    private final UserRepository userRepository;
 
     // to get all the users
     public List<UserData> getAllUserData() {
@@ -91,4 +94,13 @@ public class UserDataService {
     public void deleteUser(Long id) {
         userDataRepository.deleteById(id);
     }
+
+    // get a user id by his username
+    public Long userIdByUsername(String username) {
+        Optional<User> user = userRepository.findByUsername(username);
+        if(user.isPresent()) {
+            return user.get().getId();
+        }
+        return null;
+    };
 }

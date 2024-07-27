@@ -1,7 +1,11 @@
 package com.learn.demo.controllers;
 
-import com.learn.demo.models.UserData;
+import com.learn.demo.models.*;
+import com.learn.demo.payload.request.TokenRefreshRequest;
+import com.learn.demo.payload.response.TokenRefreshResponse;
 import com.learn.demo.security.jwt.AuthEntryPointJwt;
+import com.learn.demo.security.jwt.exeption.TokenRefreshException;
+import com.learn.demo.security.services.RefreshTokenService;
 import com.learn.demo.security.services.UserDataService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -14,9 +18,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import com.learn.demo.models.ERole;
-import com.learn.demo.models.Role;
-import com.learn.demo.models.User;
 import com.learn.demo.payload.request.SignupRequest;
 import com.learn.demo.payload.request.LoginRequest;
 import com.learn.demo.payload.response.JwtResponse;
@@ -48,27 +49,37 @@ public class AuthController {
     @Autowired
     JwtUtils jwtUtils;
 
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
     public AuthController(UserDataService userDataService) {
         this.userDataService = userDataService;
     }
 
+    // connection to an account, with creation of a token
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtils.generateJwtToken(authentication);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
+        int deleteDBToken = refreshTokenService.deleteByUserId(userDetails.getId());
+
+        String jwt = jwtUtils.generateJwtToken(userDetails);
+
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+
         System.out.println("token: " + jwt);
         return ResponseEntity
-                .ok(new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
+                .ok(new JwtResponse(jwt, refreshToken.getToken(), userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
     }
 
+    // creation of account
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
@@ -119,6 +130,30 @@ public class AuthController {
         // new MessageResponse("User registered successfully!")
         return ResponseEntity.ok(user.getId());
     }
+
+    // delete token by id
+    @PostMapping("/deletetoken")
+    public ResponseEntity<?> deleteTokenById(@Valid @RequestBody Long id) {
+        int response = refreshTokenService.deleteByUserId(id);
+        return ResponseEntity.ok(new MessageResponse("good bro, nice"+ response));
+    }
+
+
+    @PostMapping("/refreshToken")
+    public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtils.generateTokenFromUsername(user.getUsername());
+                    return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
+                })
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
+                        "Refresh token is not in database!"));
+    }
+
 
     private final UserDataService userDataService;
 
